@@ -54,8 +54,6 @@ export default class GameScene extends Phaser.Scene {
 
     this.createButtons();
 
-    this.showDirectionDialog();
-
     this.input.keyboard.on("keydown-F", () => {
       this.toggleFullscreen();
     });
@@ -208,17 +206,25 @@ export default class GameScene extends Phaser.Scene {
     if (sameStack[topIndex + 1]) {
       const nextCard = sameStack[topIndex + 1];
 
+      if (nextCard.input && nextCard.input.draggable) {
+        return;
+      }
+
       if (nextCard.texture.key === "cardBack" && nextCard.faceKey) {
         nextCard.setTexture(nextCard.faceKey);
       }
 
+      const newY = nextCard.y - 6;
+
       this.tweens.add({
         targets: nextCard,
-        y: nextCard.y - 6,
+        y: newY,
         alpha: 1,
         duration: 250,
         ease: "Sine.easeOut",
         onComplete: () => {
+          nextCard.startY = newY;
+
           nextCard.setInteractive({ draggable: true });
           this.input.setDraggable(nextCard);
 
@@ -243,7 +249,7 @@ export default class GameScene extends Phaser.Scene {
           draggedCard.x,
           draggedCard.y,
           aceCard.x,
-          aceCard.y
+          aceCard.y,
         );
 
         if (distance < 60) {
@@ -265,7 +271,7 @@ export default class GameScene extends Phaser.Scene {
           draggedCard.x,
           draggedCard.y,
           kingCard.x,
-          kingCard.y
+          kingCard.y,
         );
 
         if (distance < 60) {
@@ -410,7 +416,7 @@ export default class GameScene extends Phaser.Scene {
             fontSize: "36px",
             color: "#FFFFFF",
             fontStyle: "bold",
-          }
+          },
         )
         .setOrigin(0.5)
         .setDepth(2000)
@@ -512,7 +518,7 @@ export default class GameScene extends Phaser.Scene {
           aceBtn,
           aceBtnText,
           kingBtn,
-          kingBtnText
+          kingBtnText,
         );
       });
 
@@ -540,7 +546,7 @@ export default class GameScene extends Phaser.Scene {
           aceBtn,
           aceBtnText,
           kingBtn,
-          kingBtnText
+          kingBtnText,
         );
       });
 
@@ -561,7 +567,7 @@ export default class GameScene extends Phaser.Scene {
     aceBtn,
     aceBtnText,
     kingBtn,
-    kingBtnText
+    kingBtnText,
   ) {
     overlay.destroy();
     panel.destroy();
@@ -590,29 +596,15 @@ export default class GameScene extends Phaser.Scene {
 
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
-    const radius = 400;
+    const radius = 300;
     const totalStacks = 16;
 
     const startAngle = -180;
     const endAngle = 25;
     const angleStep = (startAngle - endAngle) / totalStacks;
 
-    let deckIndex = 0;
     const cards = [];
-
-    const cardsPerStack = [];
-    for (let i = 0; i < totalStacks; i++) {
-      cardsPerStack[i] = 0;
-    }
-
-    let currentStack = 0;
-    for (let i = 0; i < faceKeys.length; i++) {
-      cardsPerStack[currentStack]++;
-      currentStack++;
-      if (currentStack >= totalStacks) {
-        currentStack = 0;
-      }
-    }
+    let deckIndex = 0;
 
     outerLoop: for (let i = 0; i < totalStacks; i++) {
       const angleDeg = startAngle - i * angleStep;
@@ -621,20 +613,20 @@ export default class GameScene extends Phaser.Scene {
       const x = centerX + Math.cos(angleRad) * radius * 1.2;
       const y = centerY + Math.sin(angleRad) * radius * 0.9;
 
-      const stackSize = cardsPerStack[i];
-      if (stackSize === 0) continue;
-
+      const stackDepth = 3;
       let lastCard = null;
+      let isLastCardInStack = false;
 
-      for (let j = 0; j < stackSize; j++) {
+      for (let j = 0; j < stackDepth; j++) {
         if (deckIndex >= faceKeys.length) {
-          break outerLoop;
+          isLastCardInStack = true;
+          break;
         }
 
         const faceKey = faceKeys[deckIndex];
         deckIndex++;
 
-        const isLast = j === stackSize - 1;
+        const isLast = j === stackDepth - 1 || deckIndex >= faceKeys.length;
 
         const card = this.add
           .image(x, y + j * 4, isLast ? faceKey : "cardBack")
@@ -665,6 +657,10 @@ export default class GameScene extends Phaser.Scene {
           this.openNextCard(lastCard);
         });
       }
+
+      if (isLastCardInStack) {
+        break outerLoop;
+      }
     }
 
     this.cards = cards;
@@ -673,7 +669,7 @@ export default class GameScene extends Phaser.Scene {
 
   showHint() {
     const topCards = this.cards.filter(
-      (card) => card.input && card.input.draggable
+      (card) => card.input && card.input.draggable,
     );
 
     for (let card of topCards) {
