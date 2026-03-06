@@ -1,13 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Disable auto-scaling on mobile so Phaser controls the canvas size -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- iOS / Android home-screen app hints -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Theme colour for browser chrome (Android) -->
+    <meta name="theme-color" content="#001122" />
     <link rel="stylesheet" href="/src/style.css" />
     <title>Crescent Solitaire</title>
-  
   </head>
   <body>
+    <!-- Portrait-mode rotation hint (shown via CSS media query) -->
+    <div id="rotate-hint" aria-hidden="true">
+      <span class="rotate-icon">📱</span>
+      <p>Пожалуйста, поверните устройство горизонтально для игры.</p>
+    </div>
+
     <div id="game-container"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

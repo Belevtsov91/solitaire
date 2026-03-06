@@ -1,13 +1,176 @@
-html,
-body {
+/* ─── Custom properties ────────────────────────────────────────────────────── */
+:root {
+  --c-bg-deep:   #001122;
+  --c-bg-mid:    #002244;
+  --c-bg-light:  #003366;
+  --c-accent:    #0088cc;
+  --c-accent-2:  #00ccff;
+  --c-gold:      #ffd700;
+  --c-felt:      #1a6b3c;
+  --c-text:      #e8f4ff;
+
+  --anim-slow:   1.2s;
+  --anim-fast:   0.3s;
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-  background: #003366;
 }
-#game-container {
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+html, body {
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--c-text);
+
+  /*
+    Three layered gradients for a deep casino-feel background:
+    1. A soft blue spotlight from the top-left
+    2. A deep teal wash from the bottom-right
+    3. A base diagonal gradient
+  */
+  background-color: var(--c-bg-deep);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 15% 15%, rgba(0, 120, 200, 0.20) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 80% at 85% 90%, rgba(0,  70, 130, 0.18) 0%, transparent 60%),
+    linear-gradient(155deg, #001a2e 0%, #002f50 45%, #001a2e 100%);
+  background-attachment: fixed;
+}
+
+/* Subtle animated shimmer that plays behind the canvas letterboxes */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 50% 40% at 25% 35%, rgba(0, 170, 255, 0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 55% at 75% 65%, rgba(0, 100, 200, 0.06) 0%, transparent 60%);
+  animation: bgShimmer 9s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes bgShimmer {
+  from { transform: scale(1.00) rotate(0deg);   opacity: 0.7; }
+  to   { transform: scale(1.06) rotate(1.5deg); opacity: 1.0; }
+}
+
+/* ─── Game container ─────────────────────────────────────────────────────── */
+#game-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+/* ─── Canvas ─────────────────────────────────────────────────────────────── */
+canvas {
+  display: block;
+  /*
+    "auto" gives the browser freedom to pick the best rendering quality.
+    Use "pixelated" if you have pixel-art assets that must stay sharp.
+  */
+  image-rendering: auto;
+
+  /* Prevent native touch gestures interfering with Phaser drag */
+  touch-action: none;
+
+  /* Remove blue flash on mobile tap */
+  -webkit-tap-highlight-color: transparent;
+
+  /* Prevent text/image selection while dragging cards */
+  user-select: none;
+  -webkit-user-select: none;
+
+  /* Smooth appearance on high-DPI screens */
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* ─── Portrait-mode rotation hint ───────────────────────────────────────── */
+/*
+  Shown automatically via media query when the device is in portrait mode
+  and the viewport is narrower than 600 px (typical phone).
+*/
+#rotate-hint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--c-bg-deep);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+  padding: 32px;
+  z-index: 9999;
+
+  font-size: clamp(15px, 4vw, 22px);
+  line-height: 1.5;
+}
+
+#rotate-hint .rotate-icon {
+  font-size: clamp(48px, 14vw, 80px);
+  animation: rotatePhone 2.4s ease-in-out infinite;
+  display: block;
+}
+
+@keyframes rotatePhone {
+  0%,  35% { transform: rotate(0deg);   }
+  55%, 90% { transform: rotate(-90deg); }
+  100%     { transform: rotate(0deg);   }
+}
+
+#rotate-hint p {
+  opacity: 0.85;
+  max-width: 280px;
+}
+
+/* Activate the hint on portrait phones */
+@media screen and (orientation: portrait) and (max-width: 599px) {
+  #rotate-hint { display: flex; }
+}
+
+/* ─── Loading state ──────────────────────────────────────────────────────── */
+/*
+  While Phaser boots (before the canvas is ready) the body background is
+  visible. The ::after pseudo-element adds a centered "loading" dot pulse
+  so the screen isn't completely blank.
+*/
+body.loading::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: inherit;
+  z-index: 0;
+}
+
+/* ─── Scrollbar (if somehow overflow is re-enabled) ──────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--c-bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--c-accent); border-radius: 3px; }
+
+/* ─── Responsive tweaks ──────────────────────────────────────────────────── */
+
+/* Tablet landscape — nothing special needed, layout.js handles it */
+
+/* Small landscape phones (e.g. iPhone SE landscape: 667 × 375) */
+@media screen and (max-height: 420px) and (orientation: landscape) {
+  body::before { animation: none; } /* save GPU on tiny screens */
+}
+
+/* High-DPI / retina — keep the shimmer subtle */
+@media (min-resolution: 2dppx) {
+  body::before { opacity: 0.5; }
 }
